@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import personService from './services/persons'
 
 const Filter = ({ filter, handleFilter }) => {
   return (
@@ -25,7 +27,7 @@ const Form = ({ handleNewName, handleNewNumber, handleSubmit, newName, newNumber
   )
 }
 
-const Persons = ({ persons, filter }) => {
+const Persons = ({ persons, filter, removePerson }) => {
   let personsToShow;
   if (filter === '') {
     personsToShow = persons;
@@ -35,22 +37,26 @@ const Persons = ({ persons, filter }) => {
 
   return (
     <>
-      {personsToShow.map(({ name, number, id }) => <p key={id}>{name} {number}</p>)}
+      {personsToShow.map(({ name, number, id }) => <p key={id}>{name} {number} <button onClick={() => removePerson(id)}>delete</button></p>)}
     </>
   )
 }
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456', id: 1 },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
-  ])
-
+  const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+
+  const hook = () => {
+    personService
+      .getAll()
+      .then(returnedPersons => {
+        setPersons(returnedPersons)
+      })
+  }
+
+  useEffect(hook, [])
 
   const handleNewName = (event) => {
     setNewName(event.target.value)
@@ -76,10 +82,22 @@ const App = () => {
       return
     }
 
-    setPersons([...persons, {name: trimmedName, number: newNumber.trim(), id: persons.length + 1}])
-    setNewName('')
-    setNewNumber('')
+    personService
+      .create({name: trimmedName, number: newNumber.trim()})
+      .then(returnedPerson => {
+        setPersons([...persons, returnedPerson])
+        setNewName('')
+        setNewNumber('')
+      })
+  }
 
+  const removePerson = (id) => {
+    let person = persons.find(p => p.id === id)
+    let response = window.confirm(`Delete ${person.name}?`)
+    if (response) {
+      personService.remove(id)
+      setPersons(persons.filter(p => p.id !== id))
+    }
   }
 
   return (
@@ -100,7 +118,7 @@ const App = () => {
 
       <h2>Numbers</h2>
 
-      <Persons filter={filter} persons={persons} />
+      <Persons filter={filter} persons={persons} removePerson={removePerson} />
     </div>
   )
 }
