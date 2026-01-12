@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 import Note from './components/Note'
 import noteService from './services/notes'
 
@@ -14,6 +13,7 @@ const App = () => {
       .then(initialNotes => {
         setNotes(initialNotes)
       })
+      .catch(error => console.log(error))
   }
 
   useEffect(hook, [])
